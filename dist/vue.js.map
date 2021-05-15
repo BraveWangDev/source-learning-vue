@@ -1,0 +1,1 @@
+{"version":3,"file":"vue.js","sources":["../src/index.js"],"sourcesContent":["\nfunction Vue(){\n\n}\n\n// 导出 Vue 函数供外部使用\nexport default Vue;"],"names":["Vue"],"mappings":";;;;;;CACA,SAASA,GAAT,GAAc;;;;;;;;"}
