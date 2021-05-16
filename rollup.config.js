@@ -1,4 +1,5 @@
 import babel from 'rollup-plugin-babel'
+// 实现按照 node 方式解析文件,可以自动找到入口文件 index.js
 import resolve from 'rollup-plugin-node-resolve';
 
 // rollup 配置文件，导出一个rollup 配置对象

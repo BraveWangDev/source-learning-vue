@@ -14,9 +14,15 @@
   <script>
     let vm = new Vue({
       el: '#app',
-      data: {
-        message: 'Hello Vue'
+      data() {
+        // console.log("打印 data函数执行时，this的指向")
+        // console.log(this)
+        // // data函数返回的对象中，obj属性为一个对象，它的属性不会被观测
+        return { message: 'Hello Vue', obj: { key: "val" } } // data 返回一个对象
       }
+      // data: {
+      //   message: 'Hello Vue'
+      // }
     });
   </script>
 </body>
