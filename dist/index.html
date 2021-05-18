@@ -17,13 +17,17 @@
       data() {
         // console.log("打印 data函数执行时，this的指向")
         // console.log(this)
-        // // data函数返回的对象中，obj属性为一个对象，它的属性不会被观测
-        return { message: 'Hello Vue', obj: { key: "val" } } // data 返回一个对象
+        // data函数返回的对象中，obj属性为一个对象，它的属性不会被观测
+        return { message: 'Hello Vue', obj: { key: "val" }, arr:[1,2,3]} // data 返回一个对象
       }
       // data: {
       //   message: 'Hello Vue'
       // }
     });
+
+    console.log(vm)
+    console.log(vm.message)
+    console.log(vm.arr.push(4))
   </script>
 </body>
 
