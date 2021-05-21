@@ -12,22 +12,52 @@
   <div id=app>{{message}}</div>
   <script src="./vue.js"></script>
   <script>
+    debugger;
     let vm = new Vue({
       el: '#app',
       data() {
         // console.log("打印 data函数执行时，this的指向")
         // console.log(this)
-        // data函数返回的对象中，obj属性为一个对象，它的属性不会被观测
-        return { message: 'Hello Vue', obj: { key: "val" }, arr:[1,2,3]} // data 返回一个对象
+        // 测试：数组的深层观测问题
+        // return { arr: [[]] } // 数组嵌套数组
+        // 测试：修改新对象的属性值
+        // return { message: 'Hello Vue', obj: { key: "val" }, arr: [1, 2, 3] }
+        // 测试：修改数组中已存在的属性值
+        // return { arr: [{ name: "Brave"}] } // 数组嵌套对象
+        // 测试：修改数组的索引、实现数组中新对象的深层观测
+        // return { arr: [{ name: "Brave"}, 100 ] } // 修改数组索引
+        // 测试：数组新增对象的深层观测
+        return { arr: [{ name: "Brave"}, {} ] } // 向数组中添加新对象，并修改属性
       }
       // data: {
       //   message: 'Hello Vue'
       // }
     });
+    // 测试：数组的深层观测问题
+    //    不会更新，当前仅重写了数组链上的方法，数组中的数组没有被递归处理
+    // vm.arr[0].push("123")
 
-    console.log(vm)
-    console.log(vm.message)
-    console.log(vm.arr.push(4))
+    // 测试：修改新对象的属性值
+    //    不会更新，当前新对象没有被被观测
+    // vm.message = { a: 100 }
+    // vm.message.a = 200;
+
+    // 测试：修改数组中已存在的属性值
+    //  会更新，数组中的对象会被递归观测
+    // vm.arr[0].name = "BraveWang";
+
+    // 测试：修改数组的索引
+    //    不会更新，Vue2 没有对数组索引进行劫持
+    // vm.arr[1] = 200;
+
+    // 实现数组中新对象的深层观测-push逻辑的重写
+    // vm.arr.push({a:100});
+    // vm.arr[2].a = 200;
+
+    // 测试：数组新增对象的深层观测
+    vm.arr.push({ a: 100 }, { a: 100 }, { a: 100 });
+
+    console.log(vm.arr)
   </script>
 </body>
 

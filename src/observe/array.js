@@ -25,13 +25,31 @@ let methods = [
 //  同时，只重写了 data 中数组原型的方法，不会影响到其他数组
 // 数组劫持的实现，因为只劫持了这7个方法，所以修改数组的索引和长度都不能触发视图更新
 methods.forEach(method => {
-  arrayMethods[method] = function () {
+  // 当前的外部调用：arr.push
+  arrayMethods[method] = function (...args) {
     console.log('数组的方法进行重写操作 method = ' + method)
-  }
-});
-methods.forEach(method => {
-  arrayMethods[method] = function () {
-    console.log('数组的方法进行重写操作 method = ' + method)
+    // AOP:before 原生方法扩展... 
+    // 调用数组原生方法逻辑（绑定到当前调用上下文）
+    oldArrayPrototype[method].call(this, ...args)
+    // AOP::after 原生方法扩展...
+
+    // 数组新增的属性如果是属性，要继续观测
+    // 哪些方法有增加数组的功能: splice push unshift
+    let inserted = null;
+    let ob = this.__ob__;
+    
+    switch (method) {
+      // arr.splice(0,0,100) 如果splice方法用于增加,一定有第三个参数,从第三个开始都是添加的内容
+      case 'splice':  // 修改 删除 添加
+        inserted = args.slice(2); // splice方法从第三个参数起是新增数据
+      case 'push':    // 向前增加
+      case 'unshift': // 向后增加
+        inserted = args // push、unshift的参数就是新增
+        break;
+    }
+
+    // observeArray：内部遍历inserted数组,调用observe方法，是对象就new Observer，继续深层观测
+    if(inserted)ob.observeArray(inserted);// inserted 有值就是数组
   }
 });
 

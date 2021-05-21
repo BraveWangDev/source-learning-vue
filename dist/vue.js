@@ -43,13 +43,36 @@
   // 数组劫持的实现，因为只劫持了这7个方法，所以修改数组的索引和长度都不能触发视图更新
 
   methods.forEach(method => {
-    arrayMethods[method] = function () {
-      console.log('数组的方法进行重写操作 method = ' + method);
-    };
-  });
-  methods.forEach(method => {
-    arrayMethods[method] = function () {
-      console.log('数组的方法进行重写操作 method = ' + method);
+    // 当前的外部调用：arr.push
+    arrayMethods[method] = function (...args) {
+      console.log('数组的方法进行重写操作 method = ' + method); // AOP:before 原生方法扩展... 
+      // 调用数组原生方法逻辑（绑定到当前调用上下文）
+
+      oldArrayPrototype[method].call(this, ...args); // AOP::after 原生方法扩展...
+      // 数组新增的属性如果是属性，要继续观测
+      // 哪些方法有增加数组的功能: splice push unshift
+
+      let inserted = null;
+      let ob = this.__ob__;
+
+      switch (method) {
+        // arr.splice(0,0,100) 如果splice方法用于增加,一定有第三个参数,从第三个开始都是添加的内容
+        case 'splice':
+          // 修改 删除 添加
+          inserted = args.slice(2);
+        // splice方法从第三个参数起是新增数据
+
+        case 'push': // 向前增加
+
+        case 'unshift':
+          // 向后增加
+          inserted = args; // push、unshift的参数就是新增
+
+          break;
+      } // observeArray：内部遍历inserted数组,调用observe方法，是对象就new Observer，继续深层观测
+
+
+      if (inserted) ob.observeArray(inserted); // inserted 有值就是数组
     };
   }); // 数组劫持的实现：劫持这 7个方法，所以修改索引和长度都是不能触发视图变化的
 
@@ -57,6 +80,11 @@
     // 1，如果 value 不是对象，说明写错了，就不需要观测了，直接 return
     // 注意：数据也是 Object，这里就不做容错判断了，忽略使用错误传入数组的情况
     if (!isObject(value)) {
+      return;
+    } // 通过__ob__属性判断对象是否已经被观测，如果已经被观测，就不再重复观测了；
+
+
+    if (value.__ob__) {
       return;
     } // 2，对 对象 进行观测（最外层必须是一个object!不能是数组,Vue没有这种用法）
 
@@ -66,14 +94,30 @@
 
   class Observer {
     constructor(value) {
-      // 对 value 是数组和对象的情况分开处理
+      // value：为数组或对象添加自定义属性__ob__ = this，
+      // this：为当前 Observer 类的实例，实例上就有 observeArray 方法；
+      // value.__ob__ = this;	// 可被遍历枚举，会造成死循环
+      // 定义__ob__ 属性为不可被枚举，防止对象在进入walk都继续defineProperty，造成死循环
+      Object.defineProperty(value, '__ob__', {
+        value: this,
+        enumerable: false // 不可被枚举
+
+      }); // 对 value 是数组和对象的情况分开处理
+
       if (isArray(value)) {
         value.__proto__ = arrayMethods; // 更改数组的原型方法
+
+        this.observeArray(value); // 数组的深层观测处理
       } else {
         // 如果value是对象，就循环对象，将对象中的属性使用Object.defineProperty重新定义一遍
         this.walk(value); // 上来就走一步，这个方法的核心就是在循环对象
       }
-    } // 循环data对象（不需要循环data原型上的方法），使用 Object.keys()
+    }
+    /**
+     * 遍历对象
+     *  循环data对象（不需要循环data原型上的方法），使用 Object.keys()
+     * @param {*} data 
+     */
 
 
     walk(data) {
@@ -81,6 +125,18 @@
         // 使用Object.defineProperty重新定义data对象中的属性
         defineReactive(data, key, data[key]);
       });
+    }
+    /**
+     * 遍历数组，对数组中的对象进行递归观测
+     *  1）[[]] 数组套数组
+     *  2）[{}] 数组套对象
+     * @param {*} data 
+     */
+
+
+    observeArray(data) {
+      // observe方法内，如果是对象类型，继续 new Observer 进行递归处理
+      data.forEach(item => observe(item));
     }
 
   }
@@ -105,7 +161,11 @@
       },
 
       set(newValue) {
+        // 确保新对象为响应式数据：如果新设置的值为对象，需要再次进行劫持
+        console.log("修改了被观测属性 key = " + key + ", newValue = " + JSON.stringify(newValue));
         if (newValue === value) return;
+        observe(newValue); // observe方法：如果是对象，会 new Observer 深层观测
+
         value = newValue;
       }
 
