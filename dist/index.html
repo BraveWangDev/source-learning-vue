@@ -9,12 +9,32 @@
 </head>
 
 <body>
+  <!-- <div id="app">{{message}}</div> -->
+  <div id="app" a='1' b=2 > <p>{{message}} <span>Hello Vue</span></p></div>
+  <script src="./vue.js"></script>
+  <script>
+    let vm = new Vue({
+      el: '#app',
+      data() {
+        return { message:  "Brave" }
+      },
+      // template:'<div id="app"></div>'
+      // render(){
+
+      // }
+    }); 
+  </script>
+</body>
+
+
+<!-- <body>
   <div id=app>{{message}}</div>
   <script src="./vue.js"></script>
   <script>
     debugger;
     let vm = new Vue({
-      el: '#app',
+      // 挂载方式一
+      // el: '#app',
       data() {
         // console.log("打印 data函数执行时，this的指向")
         // console.log(this)
@@ -28,11 +48,15 @@
         // return { arr: [{ name: "Brave"}, 100 ] } // 修改数组索引
         // 测试：数组新增对象的深层观测
         return { arr: [{ name: "Brave"}, {} ] } // 向数组中添加新对象，并修改属性
-      }
+      },
+      // 第二种
+      template:'',
+      // 第三种
+      render(){}
       // data: {
       //   message: 'Hello Vue'
       // }
-    });
+    }).$mount('#app');// 挂载方式 2
     // 测试：数组的深层观测问题
     //    不会更新，当前仅重写了数组链上的方法，数组中的数组没有被递归处理
     // vm.arr[0].push("123")
@@ -58,7 +82,6 @@
     vm.arr.push({ a: 100 }, { a: 100 }, { a: 100 });
 
     console.log(vm.arr)
-  </script>
-</body>
+</body> -->
 
 </html>

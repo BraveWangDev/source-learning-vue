@@ -1,3 +1,4 @@
+import { compileToFunction } from "./compiler";
 import { initState } from "./state";
 
 export function initMixin(Vue) {
@@ -9,9 +10,38 @@ export function initMixin(Vue) {
     // 目前在 vue 实例化时，传入的 options 只有 el 和 data 两个参数
     initState(vm);  // 状态的初始化
 
-    // 如果有 el，就需要data 数据渲染到视图上
     if (vm.$options.el) {
-      console.log("有el,需要挂载")
+      // 将数据挂在到页面上（此时,数据已经被劫持）
+      vm.$mount(vm.$options.el)
     }
+  }
+
+  // 支持 new Vue({el}) 和 new Vue().$mount 两种情况
+  Vue.prototype.$mount = function (el) {
+    console.log("***** 进入 $mount，el = " + el + "*****")
+    const vm = this;
+    const opts = vm.$options;
+    el = document.querySelector(el); // 获取真实的元素
+    vm.$el = el; // vm.$el 表示当前页面上的真实元素
+    console.log("获取真实的元素，el = " + el)
+
+    // 如果没有 render, 看 template
+    if (!opts.render) {
+      console.log("options 中没有 render , 继续取 template")
+      // 如果没有 template, 采用元素内容
+      let template = opts.template;
+      if (!template) {
+        console.log("options 中没有 template, 取 el.outerHTML = " + el.outerHTML)
+        // 拿到整个元素标签,将模板编译为 render 函数
+        template = el.outerHTML;
+      }else{
+        console.log("options 中有 template = " + template)
+      }
+
+      let render = compileToFunction(template);
+      console.log("打印 compileToFunction 返回的 render = " + JSON.stringify(render))
+      opts.render = render;
+    }
+    // console.log(opts.render)
   }
 }
