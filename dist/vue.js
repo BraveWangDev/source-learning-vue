@@ -16,22 +16,68 @@
   const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配结束标签：> 或 />
 
   const startTagClose = /^\s*(\/?)>/; // 匹配 {{   xxx    }} ，匹配到 xxx
-
   function parserHTML(html) {
-    console.log("***** 进入 parserHTML：将模板编译成 AST 语法树 *****"); // 开始标签
+    console.log("***** 进入 parserHTML：将模板编译成 AST 语法树 *****");
+    let stack = [];
+    let root = null; // 构建父子关系
 
-    function start(tagName, attrs) {
-      console.log("发射匹配到的开始标签-start,tagName = " + tagName + ",attrs = " + JSON.stringify(attrs));
+    function createASTElement(tag, attrs, parent) {
+      return {
+        tag,
+        // 标签名
+        type: 1,
+        // 元素类型为 1
+        children: [],
+        // 儿子
+        parent,
+        // 父亲
+        attrs // 属性
+
+      };
+    } // 开始标签,如:[div,p]
+
+
+    function start(tag, attrs) {
+      console.log("发射匹配到的开始标签-start,tag = " + tag + ",attrs = " + JSON.stringify(attrs)); // 遇到开始标签，就取栈中最后一个，作为父节点
+
+      let parent = stack[stack.length - 1];
+      let element = createASTElement(tag, attrs, parent); // 还没有根节点时，作为根节点
+
+      if (root == null) root = element;
+
+      if (parent) {
+        // 父节点存在
+        element.parent = parent; // 为当前节点设置父节点
+
+        parent.children.push(element); // 同时，当前节点也称为父节点的子节点
+      }
+
+      stack.push(element);
     } // 结束标签
 
 
     function end(tagName) {
-      console.log("发射匹配到的结束标签-end,tagName = " + tagName);
+      console.log("发射匹配到的结束标签-end,tagName = " + tagName); // 如果是结束标签，就从栈中抛出
+
+      let endTag = stack.pop(); // check:抛出的结束标签名与当前结束标签名是否一直
+
+      if (endTag.tag != tagName) console.log("标签出错");
     } // 文本
 
 
     function text(chars) {
-      console.log("发射匹配到的文本-text,chars = " + chars);
+      console.log("发射匹配到的文本-text,chars = " + chars); // 文本直接放到前一个中 注意：文本可能有空白字符
+
+      let parent = stack[stack.length - 1];
+      chars = chars.replace(/\s/g, ""); // 将空格替换为空，即删除空格
+
+      if (chars) {
+        parent.children.push({
+          type: 2,
+          // 文本类型为 2
+          text: chars
+        });
+      }
     }
     /**
      * 截取字符串
@@ -143,13 +189,15 @@
     }
 
     console.log("当前 template 模板，已全部解析完成");
+    return root;
   }
 
   function compileToFunction(template) {
     console.log("***** 进入 compileToFunction：将 template 编译为 render 函数 *****"); // 1，将模板变成 AST 语法树
 
     let ast = parserHTML(template);
-    console.log("解析 HTML 返回 ast 语法树：" + JSON.stringify(ast));
+    console.log("解析 HTML 返回 ast 语法树====>");
+    console.log(ast);
   }
 
   function isFunction(val) {
