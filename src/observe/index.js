@@ -31,6 +31,7 @@ class Observer {
     // 对 value 是数组和对象的情况分开处理
     if (isArray(value)) {
       value.__proto__ = arrayMethods;  // 更改数组的原型方法
+      console.log(value)
       this.observeArray(value);	// 数组的深层观测处理
     } else {
       // 如果value是对象，就循环对象，将对象中的属性使用Object.defineProperty重新定义一遍

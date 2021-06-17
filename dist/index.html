@@ -8,15 +8,40 @@
   <title>Document</title>
 </head>
 
+<!-- <body>
+  <div id="app">{{message}}</div>
+  <script src="./vue.js"></script>
+  <script>
+    debugger;
+    let vm = new Vue({
+      el: '#app',
+      data() {
+        return { 
+          message: 'Hello Vue',   // 值
+          obj: { key: "val" },    // 嵌套对象
+          arr: [1, 2, 3]          // 数组
+        }
+      },
+    });
+
+    vm.message			// 访问属性
+    vm.arr.push(4)	// 操作数组
+  </script>
+</body> -->
+
 <body>
   <!-- <div id="app">{{message}}</div> -->
-  <div id="app" a='1' b=2 > <p>{{message}} <span>Hello Vue</span></p></div>
+  <!-- <div id="app"><span>123</span></div> -->
+  <!-- <div id="app" a='1' b=2 style="color: red;background: blue;"> <p>{{message}} <span>Hello Vue 1</span><span>Hello Vue 2</span><span>Hello Vue 3</span></p></div> -->
+  <div id="app">aaa {{name}} bbb {{age}} ccc</div>
+ 
   <script src="./vue.js"></script>
   <script>
     let vm = new Vue({
       el: '#app',
       data() {
-        return { message:  "Brave" }
+        // return { message:  "Brave" }
+        return { name:  "Brave" , age : 123}
       },
       // template:'<div id="app"></div>'
       // render(){
@@ -25,7 +50,6 @@
     }); 
   </script>
 </body>
-
 
 <!-- <body>
   <div id=app>{{message}}</div>
@@ -82,6 +106,7 @@
     vm.arr.push({ a: 100 }, { a: 100 }, { a: 100 });
 
     console.log(vm.arr)
+  </script>
 </body> -->
 
 </html>

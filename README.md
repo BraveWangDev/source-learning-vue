@@ -8,3 +8,4 @@
 ### 5，实现数组类型的深层观测
 ### 6，parserHTML1-匹配模板的标签和属性
 ### 7，parserHTML2-构建为 AST 语法树
+### 8，ast 生成 render 函数

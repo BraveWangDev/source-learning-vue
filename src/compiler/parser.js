@@ -59,7 +59,7 @@ export function parserHTML(html) {
     if(chars){
       parent.children.push({
         type:2, // 文本类型为 2
-        text:chars,
+        text:chars
       })
     }
   }
