@@ -102,12 +102,13 @@ function generate(ast) {
 
 export function compileToFunction(template) {
   console.log("***** 进入 compileToFunction：将 template 编译为 render 函数 *****")
+  
   // 1，将模板变成 AST 语法树
   let ast = parserHTML(template);
   // 2，使用 AST 生成 render 函数
   let code = generate(ast); // 生成 code
   let render = new Function(`with(this){return ${code}}`);  // 包装 with + new Function
-  console.log("包装 with 生成 render 函数："+ render.toString())
-
+  // console.log("包装 with 生成 render 函数："+ render.toString())
+  
   return render
 }

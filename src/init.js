@@ -1,5 +1,7 @@
 import { compileToFunction } from "./compiler";
 import { initState } from "./state";
+import { mountComponent } from "./lifecycle";
+
 
 export function initMixin(Vue) {
   // 在Vue原型上扩展一个原型方法_init,进行vue初始化
@@ -39,9 +41,11 @@ export function initMixin(Vue) {
       }
 
       let render = compileToFunction(template);
-      console.log("打印 compileToFunction 返回的 render = " + JSON.stringify(render))
       opts.render = render;
+      console.log("打印 compileToFunction 返回的 render = " + render.toString())
     }
-    // console.log(opts.render)
+
+    // 将 render 渲染到 el 上
+    mountComponent(vm);
   }
 }

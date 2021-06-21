@@ -307,8 +307,8 @@
     let code = generate(ast); // 生成 code
 
     let render = new Function(`with(this){return ${code}}`); // 包装 with + new Function
+    // console.log("包装 with 生成 render 函数："+ render.toString())
 
-    console.log("包装 with 生成 render 函数：" + render.toString());
     return render;
   }
 
@@ -531,6 +531,83 @@
     }
   }
 
+  /**
+   * 将虚拟节点转为真实节点后插入到元素中
+   * @param {*} el    当前真实元素 id#app
+   * @param {*} vnode 虚拟节点
+   * @returns         新的真实元素
+   */
+  function patch(el, vnode) {
+    console.log(el, vnode); // 1，根据虚拟节点创建真实节点
+
+    const elm = createElm(vnode);
+    console.log("createElm", elm); // 2，使用真实节点替换掉老节点
+    // 找到元素的父亲节点
+
+    const parentNode = el.parentNode; // 找到老节点的下一个兄弟节点（nextSibling 若不存在将返回 null）
+
+    const nextSibling = el.nextSibling; // 将新节点elm插入到老节点el的下一个兄弟节点nextSibling的前面
+    // 备注：若nextSibling为 null，insertBefore 等价与 appendChild
+
+    parentNode.insertBefore(elm, nextSibling); // 删除老节点 el
+
+    parentNode.removeChild(el);
+    return elm;
+  } // 面试：虚拟节点的实现？如何将虚拟节点渲染成真实节点
+
+  function createElm(vnode) {
+    // 虚拟节点必备的三个：标签，数据，孩子
+    let {
+      tag,
+      data,
+      children,
+      text,
+      vm
+    } = vnode; // vnode.el:绑定真实节点与虚拟节点的映射关系，便于后续的节点更新操作
+
+    if (typeof tag === 'string') {
+      // 元素
+      // 处理当前元素节点
+      vnode.el = document.createElement(tag); // 创建元素的真实节点
+
+      updateProperties(vnode.el, data); // 处理元素的 data 属性
+      // 处理当前元素节点的儿子：递归创建儿子的真实节点，并添加到对应的父亲中
+
+      children.forEach(child => {
+        // 若不存在儿子，children为空数组
+        vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      // 文本：文本中 tag 是 undefined
+      vnode.el = document.createTextNode(text); // 创建文本的真实节点
+    }
+
+    return vnode.el;
+  } // 循环 data 添加到 el 的属性上
+  // 后续 diff 算法时进行完善，没有考虑样式等
+
+
+  function updateProperties(el, props = {}) {
+    for (let key in props) {
+      el.setAttribute(key, props[key]);
+    }
+  }
+
+  function mountComponent(vm) {
+    // vm._render()：调用 render 方法
+    // vm._update：将虚拟节点更新到页面上
+    // 初始化流程
+    vm._update(vm._render());
+  }
+  function lifeCycleMixin(Vue) {
+    Vue.prototype._update = function (vnode) {
+      console.log("_update-vnode", vnode);
+      const vm = this; // 传入当前真实元素vm.$el，虚拟节点vnode，返回新的真实元素
+
+      vm.$el = patch(vm.$el, vnode);
+    };
+  }
+
   function initMixin(Vue) {
     // 在Vue原型上扩展一个原型方法_init,进行vue初始化
     Vue.prototype._init = function (options) {
@@ -572,10 +649,76 @@
         }
 
         let render = compileToFunction(template);
-        console.log("打印 compileToFunction 返回的 render = " + JSON.stringify(render));
         opts.render = render;
-      } // console.log(opts.render)
+        console.log("打印 compileToFunction 返回的 render = " + render.toString());
+      } // 将 render 渲染到 el 上
 
+
+      mountComponent(vm);
+    };
+  }
+
+  // 参数：_c('标签', {属性}, ...儿子)
+  function createElement(vm, tag, data = {}, ...children) {
+    // 返回元素的虚拟节点（元素是没有文本的）
+    return vnode(vm, tag, data, children, data.key, undefined);
+  }
+  function createText(vm, text) {
+    // 返回文本的虚拟节点（文本没有标签、数据、儿子、key）
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
+  } // 通过函数返回vnode对象
+  // 后续元素需要做 diff 算法，需要 key 标识
+
+  function vnode(vm, tag, data, children, key, text) {
+    return {
+      vm,
+      // 谁的实例
+      tag,
+      // 标签
+      data,
+      // 数据
+      children,
+      // 儿子
+      key,
+      // 标识
+      text // 文本
+
+    };
+  }
+
+  function renderMixin(Vue) {
+    Vue.prototype._c = function () {
+      // createElement 创建元素型的节点
+      const vm = this;
+      return createElement(vm, ...arguments); // 传入 vm 及之前的所有参数
+    };
+
+    Vue.prototype._v = function (text) {
+      // 创建文本的虚拟节点
+      const vm = this;
+      return createText(vm, text);
+    };
+
+    Vue.prototype._s = function (val) {
+      // JSON.stringify
+      if (isObject(val)) {
+        // 是对象就转成字符串
+        return JSON.stringify(val);
+      } else {
+        // 不是对象就直接返回
+        return val;
+      }
+    };
+
+    Vue.prototype._render = function () {
+      const vm = this; // vm 中有所有数据  vm.xxx => vm._data.xxx
+
+      let {
+        render
+      } = vm.$options;
+      let vnode = render.call(vm); // 此时内部会调用_c,_v,_s，执行完成后返回虚拟节点
+
+      return vnode;
     };
   }
 
@@ -589,7 +732,10 @@
 
   }
 
-  initMixin(Vue); // 导出 Vue 函数供外部使用
+  initMixin(Vue);
+  renderMixin(Vue); // 混合一个 render 方法
+
+  lifeCycleMixin(Vue); // 导出 Vue 函数供外部使用
 
   return Vue;
 

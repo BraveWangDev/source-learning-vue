@@ -9,3 +9,4 @@
 ### 6，parserHTML1-匹配模板的标签和属性
 ### 7，parserHTML2-构建为 AST 语法树
 ### 8，ast 生成 render 函数
+### 9，根据 vnode 创建真实节点并实现新老节点的替换
