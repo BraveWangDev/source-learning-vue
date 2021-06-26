@@ -1,4 +1,5 @@
 import Dep from "./dep";
+import { queueWatcher } from "./scheduler";
 let id = 0;
 class Watcher {
   constructor(vm, fn, cb, options){
@@ -29,8 +30,12 @@ class Watcher {
     this.getter();      // 调用页面渲染逻辑
     Dep.target = null;  // 渲染完成后，清除 Watcher 记录
   }
-  // 执行视图渲染逻辑
   update(){
+    console.log("watcher-update", "查重并缓存需要更新的 watcher")
+    queueWatcher(this);
+  }
+  run(){
+    console.log("watcher-run", "真正执行视图更新")
     this.get();
   }
 }

@@ -1,7 +1,7 @@
 import { compileToFunction } from "./compiler";
 import { initState } from "./state";
 import { mountComponent } from "./lifecycle";
-
+import { nextTick } from "./utils";
 
 export function initMixin(Vue) {
   // 在Vue原型上扩展一个原型方法_init,进行vue初始化
@@ -48,4 +48,6 @@ export function initMixin(Vue) {
     // 将 render 渲染到 el 上
     mountComponent(vm);
   }
+
+  Vue.prototype.$nextTick = nextTick;
 }

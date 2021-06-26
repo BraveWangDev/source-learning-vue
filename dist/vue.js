@@ -333,6 +333,33 @@
   function isArray(val) {
     return Array.isArray(val);
   }
+  let callbacks = []; // 缓存异步更新的 nextTick
+
+  let waiting = false;
+
+  function flushsCallbacks() {
+    callbacks.forEach(fn => fn()); // 依次执行 nextTick
+
+    callbacks = []; // reset
+
+    waiting = false; // reset
+  }
+  /**
+   * 将方法异步化
+   * @param {*} fn 需要异步化的方法
+   * @returns 
+   */
+
+
+  function nextTick(fn) {
+    // return Promise.resolve().then(fn);
+    callbacks.push(fn); // 先缓存异步更新的nextTick,后续统一处理
+
+    if (!waiting) {
+      Promise.resolve().then(flushsCallbacks);
+      waiting = true; // 首次进入被置为 true,控制逻辑只走一次
+    }
+  }
 
   // 重写数组方法
   // 思路：拿到原来的方法，将部分需要重写的方法重写掉
@@ -566,6 +593,46 @@
     }
   }
 
+  let queue = []; // 用于缓存渲染 watcher
+
+  let has = {}; // 存放 watcher 唯一 id，用于 watcher 的查重
+
+  let pending = false; // 控制 setTimeout 只走一次
+
+  /**
+   * 刷新队列：执行所有 watcher.run 并将队列清空；
+   */
+
+  function flushschedulerQueue() {
+    queue.forEach(watcher => watcher.run()); // 依次触发视图更新
+
+    queue = []; // reset
+
+    has = {}; // reset
+
+    pending = false; // reset
+  }
+  /**
+   * 将 watcher 进行查重并缓存，最后统一执行更新
+   * @param {*} watcher 需更新的 watcher
+   */
+
+
+  function queueWatcher(watcher) {
+    let id = watcher.id;
+
+    if (has[id] == null) {
+      has[id] = true;
+      queue.push(watcher); // 缓存住watcher,后续统一处理
+
+      if (!pending) {
+        // 等效于防抖
+        nextTick(flushschedulerQueue);
+        pending = true; // 首次进入被置为 true，使微任务执行完成后宏任务才执行
+      }
+    }
+  }
+
   let id = 0;
 
   class Watcher {
@@ -603,10 +670,15 @@
       this.getter(); // 调用页面渲染逻辑
 
       Dep.target = null; // 渲染完成后，清除 Watcher 记录
-    } // 执行视图渲染逻辑
-
+    }
 
     update() {
+      console.log("watcher-update", "查重并缓存需要更新的 watcher");
+      queueWatcher(this);
+    }
+
+    run() {
+      console.log("watcher-run", "真正执行视图更新");
       this.get();
     }
 
@@ -746,6 +818,8 @@
 
       mountComponent(vm);
     };
+
+    Vue.prototype.$nextTick = nextTick;
   }
 
   // 参数：_c('标签', {属性}, ...儿子)

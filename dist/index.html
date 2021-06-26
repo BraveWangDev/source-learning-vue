@@ -52,11 +52,16 @@
       // render(){}
     }); 
     vm.name = "Brave Wang";
-    vm.name = "Brave";
-    vm.name = "Brave Wang";
-    vm.name = "Brave";
-    vm.name = "Brave Wang";
-    vm.name = "Brave";  
+    console.log("数据更新后立即获取 dom", vm.$el.innerHTML);
+    vm.$nextTick(()=>{
+      console.log("$nextTick获取更新后的 dom", vm.$el.innerHTML);
+    })
+    vm.$nextTick(()=>{
+      console.log("$nextTick获取更新后的 dom", vm.$el.innerHTML);
+    })
+    vm.$nextTick(()=>{
+      console.log("$nextTick获取更新后的 dom", vm.$el.innerHTML);
+    })
   </script>
 </body>
 
