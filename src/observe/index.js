@@ -1,5 +1,6 @@
 import { isArray, isObject } from "../utils";
 import { arrayMethods } from "./array";
+import Dep from "./dep";
 
 export function observe(value) {
 
@@ -74,10 +75,14 @@ class Observer {
 function defineReactive(obj, key, value) {
 
   observe(value);// 递归实现深层观测
+  let dep = new Dep();  // 为每个属性添加一个 dep
   Object.defineProperty(obj, key, {
     // get方法构成闭包：取obj属性时需返回原值value，
     // value会查找上层作用域的value，所以defineReactive函数不能被释放销毁
     get() {
+      if(Dep.target){
+        dep.depend();
+      }
       return value;
     },
     set(newValue) { // 确保新对象为响应式数据：如果新设置的值为对象，需要再次进行劫持
@@ -85,6 +90,7 @@ function defineReactive(obj, key, value) {
       if (newValue === value) return
       observe(newValue);  // observe方法：如果是对象，会 new Observer 深层观测
       value = newValue;
+      dep.notify(); // 通知当前 dep 中收集的所有 watcher 依次执行视图更新
     }
   })
 }

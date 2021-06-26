@@ -384,6 +384,34 @@
     };
   }); // 数组劫持的实现：劫持这 7个方法，所以修改索引和长度都是不能触发视图变化的
 
+  let id$1 = 0;
+
+  class Dep {
+    constructor() {
+      this.id = id$1++;
+      this.subs = [];
+    } // 让 watcher 记住 dep（查重），再让 dep 记住 watcher
+
+
+    depend() {
+      // 相当于 watcher.addDep：使当前 watcher 记住 dep
+      Dep.target.addDep(this);
+    } // 让 dep 记住 watcher - 在 watcher 中被调用
+
+
+    addSub(watcher) {
+      this.subs.push(watcher);
+    } // dep 中收集的全部 watcher 依次执行更新方法 update
+
+
+    notify() {
+      this.subs.forEach(watcher => watcher.update());
+    }
+
+  }
+
+  Dep.target = null; // 静态属性，用于记录当前 watcher
+
   function observe(value) {
     // 1，如果 value 不是对象，说明写错了，就不需要观测了，直接 return
     // 注意：数据也是 Object，这里就不做容错判断了，忽略使用错误传入数组的情况
@@ -462,10 +490,16 @@
   function defineReactive(obj, key, value) {
     observe(value); // 递归实现深层观测
 
+    let dep = new Dep(); // 为每个属性添加一个 dep
+
     Object.defineProperty(obj, key, {
       // get方法构成闭包：取obj属性时需返回原值value，
       // value会查找上层作用域的value，所以defineReactive函数不能被释放销毁
       get() {
+        if (Dep.target) {
+          dep.depend();
+        }
+
         return value;
       },
 
@@ -476,6 +510,7 @@
         observe(newValue); // observe方法：如果是对象，会 new Observer 深层观测
 
         value = newValue;
+        dep.notify(); // 通知当前 dep 中收集的所有 watcher 依次执行视图更新
       }
 
     });
@@ -529,6 +564,52 @@
     for (let key in data) {
       Proxy(vm, key, '_data');
     }
+  }
+
+  let id = 0;
+
+  class Watcher {
+    constructor(vm, fn, cb, options) {
+      this.vm = vm;
+      this.fn = fn;
+      this.cb = cb;
+      this.options = options;
+      this.id = id++; // watcher 唯一标记
+
+      this.depsId = new Set(); // 用于当前 watcher 保存 dep 实例的唯一id
+
+      this.deps = []; // 用于当前 watcher 保存 dep 实例
+
+      this.getter = fn; // fn 为页面渲染逻辑
+
+      this.get();
+    }
+
+    addDep(dep) {
+      let did = dep.id; // dep 查重 
+
+      if (!this.depsId.has(did)) {
+        // 让 watcher 记住 dep
+        this.depsId.add(did);
+        this.deps.push(dep); // 让 dep 也记住 watcher
+
+        dep.addSub(this);
+      }
+    }
+
+    get() {
+      Dep.target = this; // 在触发视图渲染前，将 watcher 记录到 Dep.target 上
+
+      this.getter(); // 调用页面渲染逻辑
+
+      Dep.target = null; // 渲染完成后，清除 Watcher 记录
+    } // 执行视图渲染逻辑
+
+
+    update() {
+      this.get();
+    }
+
   }
 
   /**
@@ -597,7 +678,16 @@
     // vm._render()：调用 render 方法
     // vm._update：将虚拟节点更新到页面上
     // 初始化流程
-    vm._update(vm._render());
+    // vm._update(vm._render());  
+    // 改造
+    let updateComponent = () => {
+      vm._update(vm._render());
+    }; // 渲染 watcher ：每个组件都有一个 watcher
+
+
+    new Watcher(vm, updateComponent, () => {
+      console.log('Watcher-update');
+    }, true);
   }
   function lifeCycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {

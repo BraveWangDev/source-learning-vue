@@ -36,6 +36,8 @@
   <!-- <div id="app">aaa {{name}} bbb {{age}} ccc</div> -->
   <div id="app">
     <li>{{name}}</li>
+    <li>{{name}}</li>
+    <li>{{name}}</li>
     <li>{{age}}</li>
   </div>
   <script src="./vue.js"></script>
@@ -47,10 +49,14 @@
         return { name:  "Brave" , age : 123}
       },
       // template:'<div id="app"></div>'
-      // render(){
-
-      // }
+      // render(){}
     }); 
+    vm.name = "Brave Wang";
+    vm.name = "Brave";
+    vm.name = "Brave Wang";
+    vm.name = "Brave";
+    vm.name = "Brave Wang";
+    vm.name = "Brave";  
   </script>
 </body>
 
