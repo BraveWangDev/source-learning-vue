@@ -50,6 +50,7 @@ methods.forEach(method => {
 
     // observeArray：内部遍历inserted数组,调用observe方法，是对象就new Observer，继续深层观测
     if(inserted)ob.observeArray(inserted);// inserted 有值就是数组
+    ob.dep.notify();  // 触发视图更新
   }
 });
 

@@ -29,11 +29,11 @@
   </script>
 </body> -->
 
-<body>
-  <!-- <div id="app">{{message}}</div> -->
-  <!-- <div id="app"><span>123</span></div> -->
-  <!-- <div id="app" a='1' b=2 style="color: red;background: blue;"> <p>{{message}} <span>Hello Vue 1</span><span>Hello Vue 2</span><span>Hello Vue 3</span></p></div> -->
-  <!-- <div id="app">aaa {{name}} bbb {{age}} ccc</div> -->
+<!-- <body>
+  <div id="app">{{message}}</div>
+  <div id="app"><span>123</span></div>
+  <div id="app" a='1' b=2 style="color: red;background: blue;"> <p>{{message}} <span>Hello Vue 1</span><span>Hello Vue 2</span><span>Hello Vue 3</span></p></div>
+  <div id="app">aaa {{name}} bbb {{age}} ccc</div>
   <div id="app">
     <li>{{name}}</li>
     <li>{{name}}</li>
@@ -63,7 +63,7 @@
       console.log("$nextTick获取更新后的 dom", vm.$el.innerHTML);
     })
   </script>
-</body>
+</body> -->
 
 <!-- <body>
   <div id=app>{{message}}</div>
@@ -122,5 +122,26 @@
     console.log(vm.arr)
   </script>
 </body> -->
+
+
+<body>
+  <div id=app>
+    {{arr}}
+  </div>
+  <script src="./vue.js"></script>
+  <script>
+    // 测试数组的依赖收集
+    let vm = new Vue({
+      el: '#app',
+      data() {
+        // return { arr: [{ a: 1 }, { b: 2 }] }  // 数组嵌套对象
+        return { arr: [[]] }  // 数组嵌套数组
+      }
+    });
+    // vm.arr[0].a = 100; // 数组中对象的属性更新
+    vm.arr[0].push(100);
+    console.log("输出当前 vm", vm);
+  </script>
+</body>
 
 </html>
