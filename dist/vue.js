@@ -4,6 +4,129 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 }(this, (function () { 'use strict';
 
+  function isFunction(val) {
+    return typeof val == 'function';
+  }
+  /**
+   * 判断是否是对象：类型是object，且不能为 null
+   * @param {*} val 
+   * @returns 
+   */
+
+  function isObject(val) {
+    return typeof val == 'object' && val !== null;
+  }
+  /**
+   * 判断是否是数组
+   * @param {*} val 
+   * @returns 
+   */
+
+  function isArray(val) {
+    return Array.isArray(val);
+  }
+  let callbacks = []; // 缓存异步更新的 nextTick
+
+  let waiting = false;
+
+  function flushsCallbacks() {
+    callbacks.forEach(fn => fn()); // 依次执行 nextTick
+
+    callbacks = []; // reset
+
+    waiting = false; // reset
+  }
+  /**
+   * 将方法异步化
+   * @param {*} fn 需要异步化的方法
+   * @returns 
+   */
+
+
+  function nextTick(fn) {
+    // return Promise.resolve().then(fn);
+    callbacks.push(fn); // 先缓存异步更新的nextTick,后续统一处理
+
+    if (!waiting) {
+      Promise.resolve().then(flushsCallbacks);
+      waiting = true; // 首次进入被置为 true,控制逻辑只走一次
+    }
+  }
+  let strats = {}; // 存放所有策略
+
+  let lifeCycle = ['beforeCreate', 'created', 'beforeMount', 'mounted'];
+  lifeCycle.forEach(hook => {
+    // 创建生命周期的合并策略
+    strats[hook] = function (parentVal, childVal) {
+      if (childVal) {
+        // 儿子有值，需要进行合并
+        if (parentVal) {
+          // 父亲儿子都有值：父亲一定是数组，将儿子合入父亲
+          return parentVal.concat(childVal);
+        } else {
+          // 儿子有值，父亲没有值：儿子放入新数组中
+          return [childVal];
+        }
+      } else {
+        // 儿子没有值，无需合并，直接返回父亲即可
+        return parentVal;
+      }
+    };
+  });
+  /**
+   * 对象合并:将childVal合并到parentVal中
+   * @param {*} parentVal   父值-老值
+   * @param {*} childVal    子值-新值
+   */
+
+  function mergeOptions(parentVal, childVal) {
+    let options = {};
+
+    for (let key in parentVal) {
+      mergeFiled(key);
+    }
+
+    for (let key in childVal) {
+      // 当新值存在，老值不存在时：添加到老值中
+      if (!parentVal.hasOwnProperty(key)) {
+        mergeFiled(key);
+      }
+    } // 合并当前 key 
+
+
+    function mergeFiled(key) {
+      // 策略模式：获取当前合并策略
+      let strat = strats[key];
+
+      if (strat) {
+        options[key] = strat(parentVal[key], childVal[key]);
+      } else {
+        // 默认合并策略：新值覆盖老值
+        options[key] = childVal[key] || parentVal[key];
+      }
+    }
+
+    return options;
+  }
+
+  function initGlobalAPI(Vue) {
+    // 全局属性：Vue.options
+    // 功能：存放 mixin, component, filte, directive 属性
+    Vue.options = {};
+
+    Vue.mixin = function (options) {
+      this.options = mergeOptions(this.options, options);
+      console.log("打印mixin合并后的options", this.options);
+      return this; // 返回this,提供链式调用
+    };
+
+    Vue.component = function (options) {};
+
+    Vue.filte = function (options) {};
+
+    Vue.directive = function (options) {};
+  }
+
   // 匹配标签名：aa-xxx
   const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`; // 命名空间标签：aa:aa-xxx
 
@@ -312,55 +435,6 @@
     return render;
   }
 
-  function isFunction(val) {
-    return typeof val == 'function';
-  }
-  /**
-   * 判断是否是对象：类型是object，且不能为 null
-   * @param {*} val 
-   * @returns 
-   */
-
-  function isObject(val) {
-    return typeof val == 'object' && val !== null;
-  }
-  /**
-   * 判断是否是数组
-   * @param {*} val 
-   * @returns 
-   */
-
-  function isArray(val) {
-    return Array.isArray(val);
-  }
-  let callbacks = []; // 缓存异步更新的 nextTick
-
-  let waiting = false;
-
-  function flushsCallbacks() {
-    callbacks.forEach(fn => fn()); // 依次执行 nextTick
-
-    callbacks = []; // reset
-
-    waiting = false; // reset
-  }
-  /**
-   * 将方法异步化
-   * @param {*} fn 需要异步化的方法
-   * @returns 
-   */
-
-
-  function nextTick(fn) {
-    // return Promise.resolve().then(fn);
-    callbacks.push(fn); // 先缓存异步更新的nextTick,后续统一处理
-
-    if (!waiting) {
-      Promise.resolve().then(flushsCallbacks);
-      waiting = true; // 首次进入被置为 true,控制逻辑只走一次
-    }
-  }
-
   // 重写数组方法
   // 思路：拿到原来的方法，将部分需要重写的方法重写掉
   let oldArrayPrototype = Array.prototype; // 获取数组老的原型方法
@@ -641,6 +715,7 @@
    */
 
   function flushschedulerQueue() {
+    // 更新前,执行生命周期：beforeUpdate
     queue.forEach(watcher => watcher.run()); // 依次触发视图更新
 
     queue = []; // reset
@@ -648,6 +723,7 @@
     has = {}; // reset
 
     pending = false; // reset
+    // 更新完成,执行生命周期：updated
   }
   /**
    * 将 watcher 进行查重并缓存，最后统一执行更新
@@ -791,12 +867,18 @@
     // 改造
     let updateComponent = () => {
       vm._update(vm._render());
-    }; // 渲染 watcher ：每个组件都有一个 watcher
+    }; // 当视图渲染前，调用钩子: beforeCreate
 
+
+    callHook(vm, 'beforeCreate'); // 渲染 watcher ：每个组件都有一个 watcher
 
     new Watcher(vm, updateComponent, () => {
-      console.log('Watcher-update');
-    }, true);
+      console.log('Watcher-update'); // 视图更新后，调用钩子: created
+
+      callHook(vm, 'created');
+    }, true); // 当视图挂载完成，调用钩子: mounted
+
+    callHook(vm, 'mounted');
   }
   function lifeCycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
@@ -806,14 +888,32 @@
       vm.$el = patch(vm.$el, vnode);
     };
   }
+  /**
+   * 执行生命周期钩子
+   *    从$options取对应的生命周期函数数组并执行
+   * @param {*} vm    vue实例
+   * @param {*} hook  生命周期
+   */
+
+  function callHook(vm, hook) {
+    // 获取生命周期对应函数数组
+    let handlers = vm.$options[hook];
+
+    if (handlers) {
+      handlers.forEach(fn => {
+        fn.call(vm); // 生命周期中的 this 指向 vm 实例
+      });
+    }
+  }
 
   function initMixin(Vue) {
     // 在Vue原型上扩展一个原型方法_init,进行vue初始化
     Vue.prototype._init = function (options) {
       const vm = this; // this 指向当前 vue 实例
+      // vm.$options = options; // 将 Vue 实例化时用户传入的options暴露到vm实例上
+      // 此时需使用 options 与 mixin 合并后的全局 options 再进行一次合并
 
-      vm.$options = options; // 将 Vue 实例化时用户传入的options暴露到vm实例上
-      // 目前在 vue 实例化时，传入的 options 只有 el 和 data 两个参数
+      vm.$options = mergeOptions(vm.constructor.options, options); // 目前在 vue 实例化时，传入的 options 只有 el 和 data 两个参数
 
       initState(vm); // 状态的初始化
 
@@ -936,7 +1036,8 @@
   initMixin(Vue);
   renderMixin(Vue); // 混合一个 render 方法
 
-  lifeCycleMixin(Vue); // 导出 Vue 函数供外部使用
+  lifeCycleMixin(Vue);
+  initGlobalAPI(Vue); // 初始化 global Api
 
   return Vue;
 

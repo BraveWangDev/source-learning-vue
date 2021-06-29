@@ -8,10 +8,12 @@ let pending = false;// 控制 setTimeout 只走一次
  * 刷新队列：执行所有 watcher.run 并将队列清空；
  */
 function flushschedulerQueue() {
+  // 更新前,执行生命周期：beforeUpdate
   queue.forEach(watcher => watcher.run()) // 依次触发视图更新
   queue = [];       // reset
   has = {};         // reset
   pending = false;  // reset
+  // 更新完成,执行生命周期：updated
 }
 
 /**

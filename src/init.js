@@ -1,14 +1,15 @@
 import { compileToFunction } from "./compiler";
 import { initState } from "./state";
 import { mountComponent } from "./lifecycle";
-import { nextTick } from "./utils";
+import { mergeOptions, nextTick } from "./utils";
 
 export function initMixin(Vue) {
   // 在Vue原型上扩展一个原型方法_init,进行vue初始化
   Vue.prototype._init = function (options) {
     const vm = this;  // this 指向当前 vue 实例
-    vm.$options = options; // 将 Vue 实例化时用户传入的options暴露到vm实例上
-
+    // vm.$options = options; // 将 Vue 实例化时用户传入的options暴露到vm实例上
+    // 此时需使用 options 与 mixin 合并后的全局 options 再进行一次合并
+    vm.$options = mergeOptions(vm.constructor.options, options);
     // 目前在 vue 实例化时，传入的 options 只有 el 和 data 两个参数
     initState(vm);  // 状态的初始化
 

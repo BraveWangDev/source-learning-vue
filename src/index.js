@@ -1,3 +1,4 @@
+import { initGlobalAPI } from "./global-api";
 import { initMixin } from "./init";
 import { lifeCycleMixin } from "./lifecycle";
 import { renderMixin } from "./render";
@@ -13,6 +14,7 @@ function Vue(options){
 initMixin(Vue)
 renderMixin(Vue)   // 混合一个 render 方法
 lifeCycleMixin(Vue)
+initGlobalAPI(Vue) // 初始化 global Api
 
 // 导出 Vue 函数供外部使用
 export default Vue;

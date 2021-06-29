@@ -41,3 +41,59 @@ export function nextTick(fn) {
     waiting = true; // 首次进入被置为 true,控制逻辑只走一次
   }
 }
+
+let strats = {};  // 存放所有策略
+let lifeCycle = [
+  'beforeCreate',
+  'created',
+  'beforeMount',
+  'mounted'
+];
+lifeCycle.forEach(hook => {
+  // 创建生命周期的合并策略
+  strats[hook] = function (parentVal, childVal) {
+    if(childVal){ // 儿子有值，需要进行合并
+      if(parentVal){
+        // 父亲儿子都有值：父亲一定是数组，将儿子合入父亲
+        return parentVal.concat(childVal);  
+      }else{
+        // 儿子有值，父亲没有值：儿子放入新数组中
+        return [childVal]
+      }
+    }else{  // 儿子没有值，无需合并，直接返回父亲即可
+      return parentVal;
+    }
+  }
+})
+
+/**
+ * 对象合并:将childVal合并到parentVal中
+ * @param {*} parentVal   父值-老值
+ * @param {*} childVal    子值-新值
+ */
+export function mergeOptions(parentVal, childVal) {
+  let options = {};
+  for(let key in parentVal){
+    mergeFiled(key);
+  }
+  for(let key in childVal){
+    // 当新值存在，老值不存在时：添加到老值中
+    if(!parentVal.hasOwnProperty(key)){
+      mergeFiled(key);
+    }
+  }
+  // 合并当前 key 
+  function mergeFiled(key) {
+    // 策略模式：获取当前合并策略
+    let strat = strats[key];
+    if(strat){  
+      options[key] = strat(parentVal[key], childVal[key]);
+    }else{  // 默认合并策略：新值覆盖老值
+      options[key] = childVal[key] || parentVal[key];
+    }
+    
+    
+  }
+
+  return options;
+}

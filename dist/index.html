@@ -124,7 +124,7 @@
 </body> -->
 
 
-<body>
+<!-- <body>
   <div id=app>
     {{arr}}
   </div>
@@ -142,6 +142,44 @@
     vm.arr[0].push(100);
     console.log("输出当前 vm", vm);
   </script>
+</body> -->
+
+
+<body>
+  <div id=app></div>
+  <script src="./vue.js"></script>
+  <script>
+    // 使用 Vue.mixin 做全局扩展
+    Vue.mixin({
+      beforeCreate(){
+        console.log("全局:mixin-beforeCreate 1")
+      }
+    })
+    Vue.mixin({
+      beforeCreate(){
+        console.log("全局:mixin-beforeCreate 2")
+      }
+    })
+    let vm = new Vue({
+      el: '#app',
+      // 用法一：
+      // beforeCreate(){},
+      // 用法二：数组写法：逻辑较多需进行分类时吗，可拆分为多个函数
+      beforeCreate:[
+        function(){
+          console.log("局部:new Vue-beforeCreate 1") // A 模块初始化
+        },
+        function(){
+          console.log("局部:new Vue-beforeCreate 2") // B 模块初始化
+        }
+      ],
+      data() {
+        return { }
+      }
+    });
+    console.log("打印合并后的optons", vm.$options)
+  </script>
 </body>
+
 
 </html>
