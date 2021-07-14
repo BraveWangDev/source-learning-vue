@@ -4,129 +4,6 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 }(this, (function () { 'use strict';
 
-  function isFunction(val) {
-    return typeof val == 'function';
-  }
-  /**
-   * 判断是否是对象：类型是object，且不能为 null
-   * @param {*} val 
-   * @returns 
-   */
-
-  function isObject(val) {
-    return typeof val == 'object' && val !== null;
-  }
-  /**
-   * 判断是否是数组
-   * @param {*} val 
-   * @returns 
-   */
-
-  function isArray(val) {
-    return Array.isArray(val);
-  }
-  let callbacks = []; // 缓存异步更新的 nextTick
-
-  let waiting = false;
-
-  function flushsCallbacks() {
-    callbacks.forEach(fn => fn()); // 依次执行 nextTick
-
-    callbacks = []; // reset
-
-    waiting = false; // reset
-  }
-  /**
-   * 将方法异步化
-   * @param {*} fn 需要异步化的方法
-   * @returns 
-   */
-
-
-  function nextTick(fn) {
-    // return Promise.resolve().then(fn);
-    callbacks.push(fn); // 先缓存异步更新的nextTick,后续统一处理
-
-    if (!waiting) {
-      Promise.resolve().then(flushsCallbacks);
-      waiting = true; // 首次进入被置为 true,控制逻辑只走一次
-    }
-  }
-  let strats = {}; // 存放所有策略
-
-  let lifeCycle = ['beforeCreate', 'created', 'beforeMount', 'mounted'];
-  lifeCycle.forEach(hook => {
-    // 创建生命周期的合并策略
-    strats[hook] = function (parentVal, childVal) {
-      if (childVal) {
-        // 儿子有值，需要进行合并
-        if (parentVal) {
-          // 父亲儿子都有值：父亲一定是数组，将儿子合入父亲
-          return parentVal.concat(childVal);
-        } else {
-          // 儿子有值，父亲没有值：儿子放入新数组中
-          return [childVal];
-        }
-      } else {
-        // 儿子没有值，无需合并，直接返回父亲即可
-        return parentVal;
-      }
-    };
-  });
-  /**
-   * 对象合并:将childVal合并到parentVal中
-   * @param {*} parentVal   父值-老值
-   * @param {*} childVal    子值-新值
-   */
-
-  function mergeOptions(parentVal, childVal) {
-    let options = {};
-
-    for (let key in parentVal) {
-      mergeFiled(key);
-    }
-
-    for (let key in childVal) {
-      // 当新值存在，老值不存在时：添加到老值中
-      if (!parentVal.hasOwnProperty(key)) {
-        mergeFiled(key);
-      }
-    } // 合并当前 key 
-
-
-    function mergeFiled(key) {
-      // 策略模式：获取当前合并策略
-      let strat = strats[key];
-
-      if (strat) {
-        options[key] = strat(parentVal[key], childVal[key]);
-      } else {
-        // 默认合并策略：新值覆盖老值
-        options[key] = childVal[key] || parentVal[key];
-      }
-    }
-
-    return options;
-  }
-
-  function initGlobalAPI(Vue) {
-    // 全局属性：Vue.options
-    // 功能：存放 mixin, component, filte, directive 属性
-    Vue.options = {};
-
-    Vue.mixin = function (options) {
-      this.options = mergeOptions(this.options, options);
-      console.log("打印mixin合并后的options", this.options);
-      return this; // 返回this,提供链式调用
-    };
-
-    Vue.component = function (options) {};
-
-    Vue.filte = function (options) {};
-
-    Vue.directive = function (options) {};
-  }
-
   // 匹配标签名：aa-xxx
   const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`; // 命名空间标签：aa:aa-xxx
 
@@ -433,6 +310,135 @@
     // console.log("包装 with 生成 render 函数："+ render.toString())
 
     return render;
+  }
+
+  function isFunction(val) {
+    return typeof val == 'function';
+  }
+  /**
+   * 判断是否是对象：类型是object，且不能为 null
+   * @param {*} val 
+   * @returns 
+   */
+
+  function isObject(val) {
+    return typeof val == 'object' && val !== null;
+  }
+  /**
+   * 判断是否是数组
+   * @param {*} val 
+   * @returns 
+   */
+
+  function isArray(val) {
+    return Array.isArray(val);
+  }
+  let callbacks = []; // 缓存异步更新的 nextTick
+
+  let waiting = false;
+
+  function flushsCallbacks() {
+    callbacks.forEach(fn => fn()); // 依次执行 nextTick
+
+    callbacks = []; // reset
+
+    waiting = false; // reset
+  }
+  /**
+   * 将方法异步化
+   * @param {*} fn 需要异步化的方法
+   * @returns 
+   */
+
+
+  function nextTick(fn) {
+    // return Promise.resolve().then(fn);
+    callbacks.push(fn); // 先缓存异步更新的nextTick,后续统一处理
+
+    if (!waiting) {
+      Promise.resolve().then(flushsCallbacks);
+      waiting = true; // 首次进入被置为 true,控制逻辑只走一次
+    }
+  }
+  let strats = {}; // 存放所有策略
+
+  let lifeCycle = ['beforeCreate', 'created', 'beforeMount', 'mounted'];
+  lifeCycle.forEach(hook => {
+    // 创建生命周期的合并策略
+    strats[hook] = function (parentVal, childVal) {
+      if (childVal) {
+        // 儿子有值，需要进行合并
+        if (parentVal) {
+          // 父亲儿子都有值：父亲一定是数组，将儿子合入父亲
+          return parentVal.concat(childVal);
+        } else {
+          // 儿子有值，父亲没有值：儿子放入新数组中
+          // return [childVal]
+          // 注意：如果传入的生命周期函数是数组，已经是数组了不能再包成数组
+          if (Array.isArray(childVal)) {
+            return childVal;
+          } else {
+            return [childVal];
+          }
+        }
+      } else {
+        // 儿子没有值，无需合并，直接返回父亲即可
+        return parentVal;
+      }
+    };
+  });
+  /**
+   * 对象合并:将childVal合并到parentVal中
+   * @param {*} parentVal   父值-老值
+   * @param {*} childVal    子值-新值
+   */
+
+  function mergeOptions(parentVal, childVal) {
+    let options = {};
+
+    for (let key in parentVal) {
+      mergeFiled(key);
+    }
+
+    for (let key in childVal) {
+      // 当新值存在，老值不存在时：添加到老值中
+      if (!parentVal.hasOwnProperty(key)) {
+        mergeFiled(key);
+      }
+    } // 合并当前 key 
+
+
+    function mergeFiled(key) {
+      // 策略模式：获取当前合并策略
+      let strat = strats[key];
+
+      if (strat) {
+        options[key] = strat(parentVal[key], childVal[key]);
+      } else {
+        // 默认合并策略：新值覆盖老值
+        options[key] = childVal[key] || parentVal[key];
+      }
+    }
+
+    return options;
+  }
+
+  function initGlobalAPI(Vue) {
+    // 全局属性：Vue.options
+    // 功能：存放 mixin, component, filte, directive 属性
+    Vue.options = {};
+
+    Vue.mixin = function (options) {
+      this.options = mergeOptions(this.options, options);
+      console.log("打印mixin合并后的options", this.options);
+      return this; // 返回this,提供链式调用
+    };
+
+    Vue.component = function (options) {};
+
+    Vue.filte = function (options) {};
+
+    Vue.directive = function (options) {};
   }
 
   // 重写数组方法
@@ -797,28 +803,95 @@
 
   }
 
+  // 参数：_c('标签', {属性}, ...儿子)
+  function createElement(vm, tag, data = {}, ...children) {
+    // 返回元素的虚拟节点（元素是没有文本的）
+    return vnode(vm, tag, data, children, data.key, undefined);
+  }
+  function createText(vm, text) {
+    // 返回文本的虚拟节点（文本没有标签、数据、儿子、key）
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
+  }
+  /**
+   * 判断两个虚拟节点是否是同一个虚拟节点
+   *  逻辑：标签名 和 key 都相同
+   * @param {*} newVnode 新虚拟节点
+   * @param {*} oldVnode 老虚拟节点
+   * @returns 
+   */
+
+  function isSameVnode(newVnode, oldVnode) {
+    return newVnode.tag === oldVnode.tag && newVnode.key === oldVnode.key;
+  } // 通过函数返回vnode对象
+  // 后续元素需要做 diff 算法，需要 key 标识
+
+  function vnode(vm, tag, data, children, key, text) {
+    return {
+      vm,
+      // 谁的实例
+      tag,
+      // 标签
+      data,
+      // 数据
+      children,
+      // 儿子
+      key,
+      // 标识
+      text // 文本
+
+    };
+  }
+
   /**
    * 将虚拟节点转为真实节点后插入到元素中
    * @param {*} el    当前真实元素 id#app
    * @param {*} vnode 虚拟节点
    * @returns         新的真实元素
    */
-  function patch(el, vnode) {
-    console.log(el, vnode); // 1，根据虚拟节点创建真实节点
 
-    const elm = createElm(vnode);
-    console.log("createElm", elm); // 2，使用真实节点替换掉老节点
-    // 找到元素的父亲节点
+  function patch(oldVnode, vnode) {
+    // console.log(oldVnode, vnode)
+    const isRealElement = oldVnode.nodeType; // 元素的节点类型是1，虚拟节点无此属性
 
-    const parentNode = el.parentNode; // 找到老节点的下一个兄弟节点（nextSibling 若不存在将返回 null）
+    if (isRealElement) {
+      // 元素代表是真实节点
+      // 1，根据虚拟节点创建真实节点
+      const elm = createElm(vnode);
+      console.log("createElm", elm); // 2，使用真实节点替换掉老节点
+      // 找到元素的父亲节点
 
-    const nextSibling = el.nextSibling; // 将新节点elm插入到老节点el的下一个兄弟节点nextSibling的前面
-    // 备注：若nextSibling为 null，insertBefore 等价与 appendChild
+      const parentNode = oldVnode.parentNode; // 找到老节点的下一个兄弟节点（nextSibling 若不存在将返回 null）
 
-    parentNode.insertBefore(elm, nextSibling); // 删除老节点 el
+      const nextSibling = oldVnode.nextSibling; // 将新节点elm插入到老节点el的下一个兄弟节点nextSibling的前面
+      // 备注：若nextSibling为 null，insertBefore 等价与 appendChild
 
-    parentNode.removeChild(el);
-    return elm;
+      parentNode.insertBefore(elm, nextSibling); // 删除老节点 el
+
+      parentNode.removeChild(oldVnode);
+      return elm;
+    } else {
+      // diff：新老虚拟节点比对
+      // console.log(oldVnode, vnode)
+      if (!isSameVnode(oldVnode, vnode)) {
+        // 同级比较，不是相同节点时，不考虑复用（放弃跨层复用），直接用新的替换旧的
+        return oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
+      } // 相同节点，就复用节点（复用老的），再更新不一样的地方（属性），注意文本要做特殊处理，文本是没有标签名的
+      // 文本的处理：文本直接更新就可以，因为文本没有儿子  组件中 Vue.component（‘xxx’）这就是组件的 tag
+
+
+      let el = vnode.el = oldVnode.el; // 节点复用：将老节点el，赋值给新节点el
+
+      if (!oldVnode.tag) {
+        // 文本：没有标签名
+        if (oldVnode.text !== vnode.text) {
+          // 文本内容变化了，更新文本内容：用新的内容更新老的内容
+          return el.textContent = vnode.text;
+        }
+      } // 元素的处理：相同节点，且新老节点不都是文本时
+
+
+      updateProperties(vnode, oldVnode.data);
+    }
   } // 面试：虚拟节点的实现？如何将虚拟节点渲染成真实节点
 
   function createElm(vnode) {
@@ -836,7 +909,7 @@
       // 处理当前元素节点
       vnode.el = document.createElement(tag); // 创建元素的真实节点
 
-      updateProperties(vnode.el, data); // 处理元素的 data 属性
+      updateProperties(vnode, data); // 处理元素的 data 属性
       // 处理当前元素节点的儿子：递归创建儿子的真实节点，并添加到对应的父亲中
 
       children.forEach(child => {
@@ -852,10 +925,45 @@
   } // 循环 data 添加到 el 的属性上
   // 后续 diff 算法时进行完善，没有考虑样式等
 
+  function updateProperties(vnode, oldProps = {}) {
+    // 1,初次渲染，用oldProps给vnode的 el 赋值即可
+    // 2,更新逻辑，拿到老的props和vnode中的 data 进行比对
+    let el = vnode.el; // dom上的真实节点（上边复用老节点时已经赋值了）
 
-  function updateProperties(el, props = {}) {
-    for (let key in props) {
-      el.setAttribute(key, props[key]);
+    let newProps = vnode.data || {}; // 拿到新的数据
+
+    let newStyly = newProps.style || {};
+    let oldStyly = oldProps.style || {}; //如果老的样式有，新的没有，就删掉
+
+    for (let key in oldStyly) {
+      // 老的样式有，新的没有，就把页面上的样式删除掉
+      if (!newStyly[key]) {
+        el.style[key] = '';
+      }
+    } // 新旧比对：两个对象比对差异
+
+
+    for (let key in newProps) {
+      // 直接用新的盖掉老的就可以了  还要注意：老的里面有，可能新的里面没有了
+      // 前后两次一样，浏览器会检测，就不会更新了，不会有性能问题
+      console.log(newProps);
+
+      if (key == 'style') {
+        // 新的里面有样式，直接覆盖即可
+        for (let key in newStyly) {
+          // 老的样式有，新的没有，就把页面上的样式删除掉
+          el.style[key] = newStyly[key];
+        }
+      } else {
+        el.setAttribute(key, newProps[key]);
+      }
+    } // 处理老的里面有，可能新的里面没有的情况，需要再删掉
+
+
+    for (let key in oldProps) {
+      if (!newProps[key]) {
+        el.removeAttribute(key);
+      }
     }
   }
 
@@ -959,34 +1067,6 @@
     Vue.prototype.$nextTick = nextTick;
   }
 
-  // 参数：_c('标签', {属性}, ...儿子)
-  function createElement(vm, tag, data = {}, ...children) {
-    // 返回元素的虚拟节点（元素是没有文本的）
-    return vnode(vm, tag, data, children, data.key, undefined);
-  }
-  function createText(vm, text) {
-    // 返回文本的虚拟节点（文本没有标签、数据、儿子、key）
-    return vnode(vm, undefined, undefined, undefined, undefined, text);
-  } // 通过函数返回vnode对象
-  // 后续元素需要做 diff 算法，需要 key 标识
-
-  function vnode(vm, tag, data, children, key, text) {
-    return {
-      vm,
-      // 谁的实例
-      tag,
-      // 标签
-      data,
-      // 数据
-      children,
-      // 儿子
-      key,
-      // 标识
-      text // 文本
-
-    };
-  }
-
   function renderMixin(Vue) {
     Vue.prototype._c = function () {
       // createElement 创建元素型的节点
@@ -1038,6 +1118,48 @@
 
   lifeCycleMixin(Vue);
   initGlobalAPI(Vue); // 初始化 global Api
+  // 1,生成第一个虚拟节点
+  // new Vue会对数据进行劫持
+
+  let vm1 = new Vue({
+    data() {
+      return {
+        name: 'Brave'
+      };
+    }
+
+  }); // 将模板 render1 生成为 render 函数
+  // let render1 = compileToFunction('<div>{{name}}</div>');// 调用 compileToFunction，将模板生成 render 函数，会解析模板，最终包成一个 function
+  // let render1 = compileToFunction('<div id="a">{{name}}</div>');
+
+  let render1 = compileToFunction('<div style="color:blue">{{name}}</div>'); // 调用 render 函数，产生虚拟节点
+
+  let oldVnode = render1.call(vm1); // oldVnode:第一次的虚拟节点
+  // 将虚拟节点生成真实节点
+
+  let el1 = createElm(oldVnode); // 将真实节点渲染到页面上
+
+  document.body.appendChild(el1); // 2，生成第二个虚拟节点
+
+  let vm2 = new Vue({
+    data() {
+      return {
+        name: 'BraveWang'
+      };
+    }
+
+  }); // let render2 = compileToFunction('<p>{{name}}</p>');
+  // let render2 = compileToFunction('<div class="b">{{name}}</div>');
+
+  let render2 = compileToFunction('<div style="color:red">{{name}}</div>');
+  let newVnode = render2.call(vm2); // 延迟看效果：初始化完成显示 el1，1 秒后移除 el1 显示 el2
+
+  setTimeout(() => {
+    // let el2 = createElm(newVnode);
+    // document.body.removeChild(el1);
+    // document.body.appendChild(el2);
+    patch(oldVnode, newVnode);
+  }, 1000); // 3，调用 patch 方法进行比对
 
   return Vue;
 
