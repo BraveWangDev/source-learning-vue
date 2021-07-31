@@ -28,7 +28,14 @@ let vm1 = new Vue({
 // 将模板 render1 生成为 render 函数
 // let render1 = compileToFunction('<div>{{name}}</div>');// 调用 compileToFunction，将模板生成 render 函数，会解析模板，最终包成一个 function
 // let render1 = compileToFunction('<div id="a">{{name}}</div>');
-let render1 = compileToFunction('<div style="color:blue">{{name}}</div>');
+// let render1 = compileToFunction('<div style="color:blue">{{name}}</div>');
+let render1 = compileToFunction(`<div>
+    <li key="E">E</li>
+    <li key="A">A</li>
+    <li key="B">B</li>
+    <li key="C">C</li>
+    <li key="D">D</li>
+</div>`);
 // 调用 render 函数，产生虚拟节点
 let oldVnode = render1.call(vm1)    // oldVnode:第一次的虚拟节点
 // 将虚拟节点生成真实节点
@@ -43,15 +50,21 @@ let vm2 = new Vue({
 })
 // let render2 = compileToFunction('<p>{{name}}</p>');
 // let render2 = compileToFunction('<div class="b">{{name}}</div>');
-let render2 = compileToFunction('<div style="color:red">{{name}}</div>');
+// let render2 = compileToFunction('<div style="color:red">{{name}}</div>');
+let render2 = compileToFunction(`<div>
+    <li key="D" style="color:pink">D</li>
+    <li key="C" style="color:yellow">C</li>
+    <li key="B" style="color:blue">B</li>
+    <li key="A" style="color:red">A</li>
+</div>`);
 let newVnode = render2.call(vm2);
 // 延迟看效果：初始化完成显示 el1，1 秒后移除 el1 显示 el2
 setTimeout(() => {
     // let el2 = createElm(newVnode);
     // document.body.removeChild(el1);
     // document.body.appendChild(el2);
-    patch(oldVnode, newVnode); 
-}, 1000);
+    patch(oldVnode, newVnode);  // 内部会做递归处理
+}, 2000);
 
 // 3，调用 patch 方法进行比对
 // let vm = new Vue({

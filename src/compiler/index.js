@@ -110,5 +110,5 @@ export function compileToFunction(template) {
   let render = new Function(`with(this){return ${code}}`);  // 包装 with + new Function
   // console.log("包装 with 生成 render 函数："+ render.toString())
   
-  return render
+  return render;
 }
