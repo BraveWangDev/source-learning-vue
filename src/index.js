@@ -30,7 +30,6 @@ let vm1 = new Vue({
 // let render1 = compileToFunction('<div id="a">{{name}}</div>');
 // let render1 = compileToFunction('<div style="color:blue">{{name}}</div>');
 let render1 = compileToFunction(`<div>
-    <li key="E">E</li>
     <li key="A">A</li>
     <li key="B">B</li>
     <li key="C">C</li>
@@ -51,11 +50,18 @@ let vm2 = new Vue({
 // let render2 = compileToFunction('<p>{{name}}</p>');
 // let render2 = compileToFunction('<div class="b">{{name}}</div>');
 // let render2 = compileToFunction('<div style="color:red">{{name}}</div>');
+// let render2 = compileToFunction(`<div>
+//     <li key="D" style="color:pink">D</li>
+//     <li key="C" style="color:yellow">C</li>
+//     <li key="B" style="color:blue">B</li>
+//     <li key="A" style="color:red">A</li>
+// </div>`);
 let render2 = compileToFunction(`<div>
-    <li key="D" style="color:pink">D</li>
-    <li key="C" style="color:yellow">C</li>
-    <li key="B" style="color:blue">B</li>
-    <li key="A" style="color:red">A</li>
+    <li key="F" style="color:pink">F</li>
+    <li key="B" style="color:yellow">B</li>
+    <li key="A" style="color:blue">A</li>
+    <li key="E" style="color:red">E</li>
+    <li key="P" style="color:red">P</li>
 </div>`);
 let newVnode = render2.call(vm2);
 // 延迟看效果：初始化完成显示 el1，1 秒后移除 el1 显示 el2

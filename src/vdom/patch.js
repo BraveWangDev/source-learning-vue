@@ -7,8 +7,8 @@ import { isSameVnode } from ".";
  * @returns             新的真实元素
  */
 export function patch(oldVnode, vnode) {
-  console.log("patch-oldVnode", oldVnode);
-  console.log("patch-newVnode", vnode);
+  // console.log("patch-oldVnode", oldVnode);
+  // console.log("patch-newVnode", vnode);
   const isRealElement = oldVnode.nodeType;  // 元素的节点类型是1，虚拟节点无此属性
   if (isRealElement) {// 元素代表是真实节点
     // 1，根据虚拟节点创建真实节点
@@ -27,6 +27,8 @@ export function patch(oldVnode, vnode) {
     parentNode.removeChild(oldVnode);
     return elm;
   } else {
+    console.log("patch-oldVnode", oldVnode);
+    console.log("patch-newVnode", vnode);
     // diff：新老虚拟节点比对
     if (!isSameVnode(oldVnode, vnode)) {// 同级比较，不是相同节点时，不考虑复用（放弃跨层复用），直接用新的替换旧的
       return oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
@@ -83,12 +85,31 @@ function updateChildren(el, oldChildren, newChildren) {
   let newEndIndex = newChildren.length - 1;
   let newEndVnode = newChildren[newEndIndex];
 
+  /**
+   * 根据children创建映射
+   */
+  function makeKeyByIndex(children) {
+     let map = {}
+     children.forEach((item, index)=>{
+       map[item.key] = index;
+     })
+     return map
+  }
+
+  let mapping = makeKeyByIndex(oldChildren);
+
   // while 循环处理，所以 diff 算法的复杂度为O(n)，只循环一遍
   // 循环结束条件：有一方遍历完了就结束；即"老的头指针和尾指针重合"或"新的头指针和尾指针重合"
   // 备注: 此while循环中主要对4种特殊情况进行优化处理,包括：头头、尾尾、头尾、尾头
+  debugger
   while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    // 当前循环开始时，先处理当前的oldStartVnode和oldEndVnode为空的情况； 原因：节点之前被移走时置空，直接跳过
+    if(!oldStartVnode){
+      oldStartVnode = oldChildren[++oldStartIndex];
+    }else if(!oldEndVnode){
+      oldEndVnode = oldChildren[--oldEndIndex];
     // 头头比较：比较新老开始节点
-    if (isSameVnode(oldStartVnode, newStartVnode)) {
+    } else if (isSameVnode(oldStartVnode, newStartVnode)) {
       // isSameVnode只能判断标签和key是否一样，但还有可能属性不一样
       // 所以还需要使用patch方法比对新老虚拟节点的属性，
       // 而patch方法是递归比对的，同时还会递归比较子节点
@@ -120,6 +141,25 @@ function updateChildren(el, oldChildren, newChildren) {
       newStartVnode = newChildren[++newStartIndex];
     }else{
       // 前面4种逻辑（头头、尾尾、头尾、尾头）,主要是考虑到用户使用时的一些特殊场景，但也有非特殊情况，如：乱序排序
+      // 筛查当前新的头指针对应的节点在mapping中是否存在
+      let moveIndex = mapping[newStartVnode.key]
+      if(moveIndex == undefined){// 没有，将当前比对的新节点插入到老的头指针对用的节点前面
+        // 将当前新的虚拟节点创建为真实节点，插入到老的开始节点前面
+        el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+      }else{  // 有,需要复用
+        // 将当前比对的老节点移动到老的头指针前面
+        let moveVnode = oldChildren[moveIndex];// 从老的队列中找到可以被复用的这个节点
+        // 复用：更新复用节点的属性，插入对应位置
+        patch(moveVnode, newStartVnode)
+        el.insertBefore(moveVnode.el, oldStartVnode.el);
+        // 由于复用的节点在oldChildren中被移走了,之前的位置要标记为空(指针移动时，跳过会使用)
+        oldChildren[moveIndex] = undefined;
+      }
+      // 每次处理完成后，新节点的头指针都需要向后移动
+      // 备注：
+      // 		无论节点是否可复用，新指针都会向后移动，所以最后统一处理；
+      //    节点可复用时，老节点的指针移动会在4种特殊情况中被处理完成；
+      newStartVnode = newChildren[++newStartIndex];
     }
   }
 
@@ -148,7 +188,8 @@ function updateChildren(el, oldChildren, newChildren) {
   if(oldStartIndex <= oldEndIndex){
     for(let i = oldStartIndex; i <= oldEndIndex; i++){
       let child = oldChildren[i];
-      el.removeChild(child.el);
+      // child有值时才删除；原因：节点有可能在移走时被置为undefined
+      child && el.removeChild(child.el);
     }
   }
 }
