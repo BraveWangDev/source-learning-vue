@@ -183,6 +183,22 @@
 
 <!-- diff算法 -->
 <body>
+  <!-- 场景：div标签复用，仅更新span标签中的文本 name -->
+  <div id="app">
+    <span>{{name}}</span>
+  </div>
   <script src="./vue.js"></script>
+  <script>
+    let vm = new Vue({
+      el: "#app",
+      data() {
+        return { name: 'Brave' }
+      }
+    });
+    setTimeout(() => {
+      vm.name = "BraveWang";
+    }, 1000);
+  </script>
 </body>
+
 </html>

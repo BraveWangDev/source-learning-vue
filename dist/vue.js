@@ -857,14 +857,13 @@
     if (isRealElement) {
       // 元素代表是真实节点
       // 1，根据虚拟节点创建真实节点
-      const elm = createElm(vnode); // console.log("createElm", elm);
-      // 2，使用真实节点替换掉老节点
+      const elm = createElm(vnode); // 2，使用真实节点替换掉老节点
       // 找到元素的父亲节点
 
       const parentNode = oldVnode.parentNode; // 找到老节点的下一个兄弟节点（nextSibling 若不存在将返回 null）
 
-      const nextSibling = oldVnode.nextSibling; // 将新节点elm插入到老节点el的下一个兄弟节点nextSibling的前面
-      // 备注：若nextSibling为 null，insertBefore 等价与 appendChild
+      const nextSibling = oldVnode.nextSibling; // 将新节点 elm 插入到老节点el的下一个兄弟节点 nextSibling 的前面
+      // 备注：若 nextSibling 为 null，insertBefore 等价于 appendChild
 
       parentNode.insertBefore(elm, nextSibling); // 删除老节点 el
 
@@ -915,8 +914,17 @@
         // 递归: updateChildren 内部调用 patch, patch, 内部还会调用 updateChildren (patch 方法是入口)
         updateChildren(el, oldChildren, newChildren);
       }
+
+      return el; // 返回新节点
     }
   }
+  /**
+   * 新老都有儿子时做比对，即 diff 算法核心逻辑
+   * 备注：采用头尾双指针的方式；优化头头、尾尾、头尾、尾头的特殊情况；
+   * @param {*} el 
+   * @param {*} oldChildren  老的儿子节点
+   * @param {*} newChildren  新的儿子节点
+   */
 
   function updateChildren(el, oldChildren, newChildren) {
     // vue2中的diff算法内部做了优化，尽量提升性能，实在不行再暴力比对
@@ -945,8 +953,6 @@
     let mapping = makeKeyByIndex(oldChildren); // while 循环处理，所以 diff 算法的复杂度为O(n)，只循环一遍
     // 循环结束条件：有一方遍历完了就结束；即"老的头指针和尾指针重合"或"新的头指针和尾指针重合"
     // 备注: 此while循环中主要对4种特殊情况进行优化处理,包括：头头、尾尾、头尾、尾头
-
-    debugger;
 
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
       // 当前循环开始时，先处理当前的oldStartVnode和oldEndVnode为空的情况； 原因：节点之前被移走时置空，直接跳过
@@ -1142,9 +1148,20 @@
   function lifeCycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
       console.log("_update-vnode", vnode);
-      const vm = this; // 传入当前真实元素vm.$el，虚拟节点vnode，返回新的真实元素
+      const vm = this; // 取上一次的 preVnode
 
-      vm.$el = patch(vm.$el, vnode);
+      let preVnode = vm.preVnode; // 渲染前，先保存当前 vnode
+
+      vm.preVnode = vnode; // preVnode 有值，说明已经有节点了，本次是更新渲染；没值就是初渲染
+
+      if (!preVnode) {
+        // 初渲染
+        // 传入当前真实元素vm.$el，虚拟节点vnode，返回新的真实元素
+        vm.$el = patch(vm.$el, vnode);
+      } else {
+        // 更新渲染:新老虚拟节点做 diff 比对
+        vm.$el = patch(preVnode, vnode);
+      }
     };
   }
   /**
@@ -1269,67 +1286,6 @@
 
   lifeCycleMixin(Vue);
   initGlobalAPI(Vue); // 初始化 global Api
-  // 1,生成第一个虚拟节点
-  // new Vue会对数据进行劫持
-
-  let vm1 = new Vue({
-    data() {
-      return {
-        name: 'Brave'
-      };
-    }
-
-  }); // 将模板 render1 生成为 render 函数
-  // let render1 = compileToFunction('<div>{{name}}</div>');// 调用 compileToFunction，将模板生成 render 函数，会解析模板，最终包成一个 function
-  // let render1 = compileToFunction('<div id="a">{{name}}</div>');
-  // let render1 = compileToFunction('<div style="color:blue">{{name}}</div>');
-
-  let render1 = compileToFunction(`<div>
-    <li key="A">A</li>
-    <li key="B">B</li>
-    <li key="C">C</li>
-    <li key="D">D</li>
-</div>`); // 调用 render 函数，产生虚拟节点
-
-  let oldVnode = render1.call(vm1); // oldVnode:第一次的虚拟节点
-  // 将虚拟节点生成真实节点
-
-  let el1 = createElm(oldVnode); // 将真实节点渲染到页面上
-
-  document.body.appendChild(el1); // 2，生成第二个虚拟节点
-
-  let vm2 = new Vue({
-    data() {
-      return {
-        name: 'BraveWang'
-      };
-    }
-
-  }); // let render2 = compileToFunction('<p>{{name}}</p>');
-  // let render2 = compileToFunction('<div class="b">{{name}}</div>');
-  // let render2 = compileToFunction('<div style="color:red">{{name}}</div>');
-  // let render2 = compileToFunction(`<div>
-  //     <li key="D" style="color:pink">D</li>
-  //     <li key="C" style="color:yellow">C</li>
-  //     <li key="B" style="color:blue">B</li>
-  //     <li key="A" style="color:red">A</li>
-  // </div>`);
-
-  let render2 = compileToFunction(`<div>
-    <li key="F" style="color:pink">F</li>
-    <li key="B" style="color:yellow">B</li>
-    <li key="A" style="color:blue">A</li>
-    <li key="E" style="color:red">E</li>
-    <li key="P" style="color:red">P</li>
-</div>`);
-  let newVnode = render2.call(vm2); // 延迟看效果：初始化完成显示 el1，1 秒后移除 el1 显示 el2
-
-  setTimeout(() => {
-    // let el2 = createElm(newVnode);
-    // document.body.removeChild(el1);
-    // document.body.appendChild(el2);
-    patch(oldVnode, newVnode); // 内部会做递归处理
-  }, 2000); // 3，调用 patch 方法进行比对
 
   return Vue;
 

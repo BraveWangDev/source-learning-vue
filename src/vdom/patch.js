@@ -13,15 +13,13 @@ export function patch(oldVnode, vnode) {
   if (isRealElement) {// 元素代表是真实节点
     // 1，根据虚拟节点创建真实节点
     const elm = createElm(vnode);
-    // console.log("createElm", elm);
-
     // 2，使用真实节点替换掉老节点
     // 找到元素的父亲节点
     const parentNode = oldVnode.parentNode;
     // 找到老节点的下一个兄弟节点（nextSibling 若不存在将返回 null）
     const nextSibling = oldVnode.nextSibling;
-    // 将新节点elm插入到老节点el的下一个兄弟节点nextSibling的前面
-    // 备注：若nextSibling为 null，insertBefore 等价与 appendChild
+    // 将新节点 elm 插入到老节点el的下一个兄弟节点 nextSibling 的前面
+    // 备注：若 nextSibling 为 null，insertBefore 等价于 appendChild
     parentNode.insertBefore(elm, nextSibling);
     // 删除老节点 el
     parentNode.removeChild(oldVnode);
@@ -67,9 +65,19 @@ export function patch(oldVnode, vnode) {
     } else {  // 递归: updateChildren 内部调用 patch, patch, 内部还会调用 updateChildren (patch 方法是入口)
       updateChildren(el, oldChildren, newChildren)
     }
+
+    return el;// 返回新节点
   }
 }
 
+
+/**
+ * 新老都有儿子时做比对，即 diff 算法核心逻辑
+ * 备注：采用头尾双指针的方式；优化头头、尾尾、头尾、尾头的特殊情况；
+ * @param {*} el 
+ * @param {*} oldChildren  老的儿子节点
+ * @param {*} newChildren  新的儿子节点
+ */
 function updateChildren(el, oldChildren, newChildren) {
   // vue2中的diff算法内部做了优化，尽量提升性能，实在不行再暴力比对
   // 常见情况：在列表中，新增或删除某一项（用户很少在列表的中间添加一项）
@@ -101,7 +109,6 @@ function updateChildren(el, oldChildren, newChildren) {
   // while 循环处理，所以 diff 算法的复杂度为O(n)，只循环一遍
   // 循环结束条件：有一方遍历完了就结束；即"老的头指针和尾指针重合"或"新的头指针和尾指针重合"
   // 备注: 此while循环中主要对4种特殊情况进行优化处理,包括：头头、尾尾、头尾、尾头
-  debugger
   while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
     // 当前循环开始时，先处理当前的oldStartVnode和oldEndVnode为空的情况； 原因：节点之前被移走时置空，直接跳过
     if(!oldStartVnode){
