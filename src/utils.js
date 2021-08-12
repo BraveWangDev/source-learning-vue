@@ -72,6 +72,18 @@ lifeCycle.forEach(hook => {
   }
 })
 
+// parentVal为函数；childVal为对象；
+strats.components = function (parentVal, childVal) {
+  // 继承：childVal.__proto__ = parentVal 子类可以沿着链找到父类的属性
+  let res = Object.create(parentVal);
+  if(childVal){
+    for (let key in childVal) {
+     res[key] = childVal[key];
+    }
+
+    return res;
+  }
+}
 /**
  * 对象合并:将childVal合并到parentVal中
  * @param {*} parentVal   父值-老值
@@ -97,8 +109,6 @@ export function mergeOptions(parentVal, childVal) {
     }else{  // 默认合并策略：新值覆盖老值
       options[key] = childVal[key] || parentVal[key];
     }
-    
-    
   }
 
   return options;

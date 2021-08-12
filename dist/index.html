@@ -182,8 +182,8 @@
 </body> -->
 
 <!-- diff算法 -->
-<body>
-  <!-- 场景：div标签复用，仅更新span标签中的文本 name -->
+<!-- <body>
+  场景：div标签复用，仅更新span标签中的文本 name
   <div id="app">
     <span>{{name}}</span>
   </div>
@@ -199,6 +199,28 @@
       vm.name = "BraveWang";
     }, 1000);
   </script>
-</body>
+</body> -->
 
+<!-- 自定义组件 -->
+<body>
+  <div id="app">
+    <my-button></my-button>
+  </div>
+  <script src="./vue.js"></script>
+  <script>
+    // 全局组件
+    Vue.component('my-button',{ // 内部被 Vue.extends 处理，成为一个构造函数
+      name:'my-button',
+      template:'<button>Hello Vue 全局组件</button>'
+    })
+    new Vue({
+      el: "#app",
+      components:{  // 这里不会被 Vue.extends 处理，就真的是一个对象
+        'my-button':{// 局部组件
+          template:'<button>Hello Vue 局部组件</button>'
+        }
+      }
+    });
+  </script>
+</body>
 </html>
